@@ -1,5 +1,5 @@
-(function($) {
-    $(document).ready(function() {
+(function ($) {
+    $(document).ready(function () {
 
         /*
          * jQuery Accessible Carrousel System, using ARIA
@@ -9,13 +9,14 @@
         /* loading aria carrousel ----------------------------------------------------------------------------------------------------------------------- */
         var $carrousel_container = $('.carrousel__container'),
             $carrousel_content = $('.carrousel__content'),
-            $body = $('body');
+            $body = $('body'),
+            AutoplayDuration;
 
 
         if ($carrousel_container.length && $carrousel_content.length) { // if there are at least one content and one container :)
 
             var hash = window.location.hash.replace("#", ""),
-                getTransEndEventName = function() {
+                getTransEndEventName = function () {
                     var i,
                         el = document.createElement('div'),
                         transitions = {
@@ -42,19 +43,20 @@
                 },
                 transEndEventName = getTransEndEventName();
             // Do something when the transition/animation ends
-            $("body").on(transEndEventName, ".slide .carrousel__content", function(e) {
+            $("body").on(transEndEventName, ".slide .carrousel__content", function (e) {
                 var $this = $(this),
                     $parent = $this.parents(".carrousel");
                 $parent.find('.carrousel__content[aria-hidden=true]').addClass('visibility-off');
             });
 
-            $carrousel_container.each(function(index_carrousel_container) {
+            $carrousel_container.each(function (index_carrousel_container) {
                 var $this_carrousel_container = $(this),
                     options = $this_carrousel_container.data(),
                     $index_carrousel = index_carrousel_container + 1,
                     $carrousel_prefix_classes = options.carrouselPrefixClasses + '-' || '',
                     $carrousel_span_text_class = options.carrouselSpanTextClass || '',
                     $carrousel_span_text = options.carrouselSpanText || '',
+                    $carrousel_autoplay_duration = options.carrouselAutoplayDuration || '', // added
                     $carrousel_span_text_final = '',
                     $carrousel_transition = options.carrouselTransition || '',
                     $carrousel_btn_previous_img = options.carrouselBtnPreviousImg || '',
@@ -64,7 +66,8 @@
                     $carrousel_hx = options.carrouselHx || '',
                     $carrousel_existing_hx = options.carrouselExistingHx || '',
                     $carrousel_hx_final = $carrousel_existing_hx != '' ? $carrousel_existing_hx : $carrousel_hx;
-
+                // make duration global
+                AutoplayDuration = $carrousel_autoplay_duration;
 
                 if ($carrousel_transition != "") {
                     $this_carrousel_container.addClass($carrousel_transition);
@@ -79,18 +82,18 @@
                 /* insert list before carrousel__container  -------------------------------------------------------------------------- */
                 var navigation = '<ol class="js-carrousel__control__list ' + $carrousel_prefix_classes + 'carrousel__control__list ' + $carrousel_prefix_classes + 'carrousel__control__list--' + $index_carrousel + '" role="tablist">';
 
-                $this_carrousel_container.find(".carrousel__content").each(function(index) {
+                $this_carrousel_container.find(".carrousel__content").each(function (index) {
                     var $this = $(this),
                         $index_readable = index + 1,
                         $content_id = "id_carrousel_content_" + $index_carrousel + "_" + $index_readable;
 
                     // add attributes
                     $this.attr({
-                            "role": "tabpanel",
-                            "id": $content_id,
-                            "aria-hidden": "true",
-                            "aria-labelledby": "label_" + $content_id
-                        })
+                        "role": "tabpanel",
+                        "id": $content_id,
+                        "aria-hidden": "true",
+                        "aria-labelledby": "label_" + $content_id
+                    })
                         .addClass('visibility-off')
                         .addClass($carrousel_prefix_classes + 'carrousel__content');
 
@@ -168,6 +171,7 @@
                     "tabindex": 0
                 });
 
+                $carrousel_container.trigger('carrousel:slide-changed');
                 // update of carrouselslide-x-x
                 $carrousel_container = $("#" + hash + ".carrousel__content").parents(".carrousel__container");
 
@@ -195,7 +199,7 @@
 
             }
             // if no selected => select first
-            $(".carrousel").each(function(index) {
+            $(".carrousel").each(function (index) {
                 var $this = $(this),
                     $first_content = $this.find(".carrousel__content:first");
                 if ($this.find(".js-carrousel__control__list__link[aria-selected=true]").length === 0) {
@@ -203,6 +207,7 @@
                         "aria-selected": "true",
                         "tabindex": 0
                     });
+                    $carrousel_container.trigger('carrousel:slide-changed');
                     $first_content.removeAttr("aria-hidden").removeClass('visibility-off');
 
                 }
@@ -214,86 +219,87 @@
 
         /* Events ---------------------------------------------------------------------------------------------------------- */
         /* click on a tab link */
-        $body.on("click", ".js-carrousel__control__list__link", function(event, additionnal) {
-                var $this = $(this),
-                    $parent = $this.parents(".carrousel"),
-                    $tab_linked = $("#" + $this.attr("aria-controls")),
-                    $index_tab,
-                    $previous_content,
-                    $carrousel_container = $parent.find(".carrousel__container"),
-                    $carrousel_hx = $carrousel_container.attr('data-carrousel-hx'),
-                    $carrousel_existing_hx = $carrousel_container.attr('data-carrousel-existing-hx'),
-                    $carrousel_hx_final = '';
+        $body.on("click", ".js-carrousel__control__list__link", function (event, additionnal) {
+            var $this = $(this),
+                $parent = $this.parents(".carrousel"),
+                $tab_linked = $("#" + $this.attr("aria-controls")),
+                $index_tab,
+                $previous_content,
+                $carrousel_container = $parent.find(".carrousel__container"),
+                $carrousel_hx = $carrousel_container.attr('data-carrousel-hx'),
+                $carrousel_existing_hx = $carrousel_container.attr('data-carrousel-existing-hx'),
+                $carrousel_hx_final = '';
 
-                if (typeof $carrousel_hx === "undefined" || $carrousel_hx === "undefined" || $carrousel_hx === "") {
-                    $carrousel_hx = '';
+            if (typeof $carrousel_hx === "undefined" || $carrousel_hx === "undefined" || $carrousel_hx === "") {
+                $carrousel_hx = '';
+            }
+            if (typeof $carrousel_existing_hx === "undefined" || $carrousel_existing_hx === "undefined" && $carrousel_existing_hx === "") {
+                $carrousel_existing_hx = '';
+            }
+
+            if ($carrousel_existing_hx != '') {
+                $carrousel_hx_final = $carrousel_existing_hx;
+            } else {
+                $carrousel_hx_final = $carrousel_hx;
+            }
+
+
+            $parent.find('.carrousel__content').removeClass('visibility-off');
+
+            // get .carrousel-slide-1-x
+            var classes = $carrousel_container.attr('class').split(' ');
+            var found = false;
+            var i = 0;
+            while (found === false && i < classes.length) {
+                if (classes[i].substr(0, 15) === "carrouselslide-") {
+                    $previous_content = classes[i];
+                    found = true;
                 }
-                if (typeof $carrousel_existing_hx === "undefined" || $carrousel_existing_hx === "undefined" && $carrousel_existing_hx === "") {
-                    $carrousel_existing_hx = '';
-                }
+                i++;
+            }
 
-                if ($carrousel_existing_hx != '') {
-                    $carrousel_hx_final = $carrousel_existing_hx;
-                } else {
-                    $carrousel_hx_final = $carrousel_hx;
-                }
+            // remove aria selected on all link
+            $parent.find(".js-carrousel__control__list__link").attr("aria-selected", "false").attr("tabindex", -1);
+            // add aria selected on $this
+            $this.attr({
+                "aria-selected": "true",
+                "tabindex": 0
+            });
+            $carrousel_container.trigger('carrousel:slide-changed');
+            // add aria-hidden on all tabs
+            $parent.find(".carrousel__content").attr({
+                "aria-hidden": "true"
+            });
 
+            // remove aria-hidden on tab linked
+            $tab_linked.removeAttr("aria-hidden");
 
-                $parent.find('.carrousel__content').removeClass('visibility-off');
+            // find index of clicked tab
+            $index_tab = ($parent.find(".carrousel__content").index($tab_linked)) + 1;
+            var tab = $previous_content.split('-');
+            $new_content = tab[0] + '-' + tab[1] + '-' + $index_tab;
+            // replace .carrouselslide-1-x by .carrouselslide-1-$index_tab
+            $parent.find(".carrousel__container").removeClass($previous_content).addClass($new_content).trigger("NextSlide");
 
-                // get .carrousel-slide-1-x
-                var classes = $carrousel_container.attr('class').split(' ');
-                var found = false;
-                var i = 0;
-                while (found === false && i < classes.length) {
-                    if (classes[i].substr(0, 15) === "carrouselslide-") {
-                        $previous_content = classes[i];
-                        found = true;
+            // if coming from button next/prev, add focus to next/prev content
+            if (additionnal == 'next' || additionnal == 'prev') {
+
+                $parent.find(".carrousel__container div").one(
+                    "webkitTransitionEnd MSTransitionEnd oTransitionEnd transitionend animationend webkitAnimationEnd oAnimationEnd oanimationend msAnimationEnd animationend",
+                    function () {
+                        $(this).data("transitioning", false); // Transition has ended.
+                        setTimeout(function () {
+                            $tab_linked.children($carrousel_hx_final).focus();
+                        }, 0);
                     }
-                    i++;
-                }
+                );
 
-                // remove aria selected on all link
-                $parent.find(".js-carrousel__control__list__link").attr("aria-selected", "false").attr("tabindex", -1);
-                // add aria selected on $this
-                $this.attr({
-                    "aria-selected": "true",
-                    "tabindex": 0
-                });
-                // add aria-hidden on all tabs
-                $parent.find(".carrousel__content").attr({
-                    "aria-hidden": "true"
-                });
+            }
 
-                // remove aria-hidden on tab linked
-                $tab_linked.removeAttr("aria-hidden");
-
-                // find index of clicked tab
-                $index_tab = ($parent.find(".carrousel__content").index($tab_linked)) + 1;
-                var tab = $previous_content.split('-');
-                $new_content = tab[0] + '-' + tab[1] + '-' + $index_tab;
-                // replace .carrouselslide-1-x by .carrouselslide-1-$index_tab
-                $parent.find(".carrousel__container").removeClass($previous_content).addClass($new_content).trigger("NextSlide");
-
-                // if coming from button next/prev, add focus to next/prev content
-                if (additionnal == 'next' || additionnal == 'prev') {
-
-                    $parent.find(".carrousel__container div").one(
-                        "webkitTransitionEnd MSTransitionEnd oTransitionEnd transitionend animationend webkitAnimationEnd oAnimationEnd oanimationend msAnimationEnd animationend",
-                        function() {
-                            $(this).data("transitioning", false); // Transition has ended.
-                            setTimeout(function() {
-                                $tab_linked.children($carrousel_hx_final).focus();
-                            }, 0);
-                        }
-                    );
-
-                }
-
-                event.preventDefault();
-            })
+            event.preventDefault();
+        })
             /* Key down in tabs */
-            .on("keydown", ".carrousel", function(event) {
+            .on("keydown", ".carrousel", function (event) {
 
                 var $parent = $(this),
                     $activated,
@@ -313,34 +319,34 @@
                         // if we are on first => activate last
                         if ($activated.is(".js-carrousel__control__list__item:first-child")) {
                             $parent.find(".js-carrousel__control__list__item:last-child a").click();
-                            setTimeout(function() {
+                            setTimeout(function () {
                                 $parent.find(".js-carrousel__control__list__item:last-child a").focus();
                             }, 0);
                         }
-                        // else activate previous
+                            // else activate previous
                         else {
                             $activated.prev().children(".js-carrousel__control__list__link").click();
-                            setTimeout(function() {
+                            setTimeout(function () {
                                 $activated.prev().children(".js-carrousel__control__list__link").focus();
                             }, 0);
                         }
                         event.preventDefault();
                     }
-                    // strike down or right in the tab
+                        // strike down or right in the tab
                     else if (event.keyCode == 40 || event.keyCode == 39) {
                         // find next tab
                         $activated = $parent.find('.js-carrousel__control__list__link[aria-selected="true"]').parent();
                         // if we are on last => activate first
                         if ($activated.is(".js-carrousel__control__list__item:last-child")) {
                             $parent.find(".js-carrousel__control__list__item:first-child a").click();
-                            setTimeout(function() {
+                            setTimeout(function () {
                                 $parent.find(".js-carrousel__control__list__item:first-child a").focus();
                             }, 0);
                         }
-                        // else activate next
+                            // else activate next
                         else {
                             $activated.next().children(".js-carrousel__control__list__link").click();
-                            setTimeout(function() {
+                            setTimeout(function () {
                                 $activated.next().children(".js-carrousel__control__list__link").focus();
                             }, 0);
                         }
@@ -348,14 +354,14 @@
                     } else if (event.keyCode == 36) {
                         // activate first tab
                         $parent.find(".js-carrousel__control__list__item:first-child a").click();
-                        setTimeout(function() {
+                        setTimeout(function () {
                             $parent.find(".js-carrousel__control__list__item:first-child a").focus();
                         }, 0);
                         event.preventDefault();
                     } else if (event.keyCode == 35) {
                         // activate last tab
                         $parent.find(".js-carrousel__control__list__item:last-child a").click();
-                        setTimeout(function() {
+                        setTimeout(function () {
                             $parent.find(".js-carrousel__control__list__item:last-child a").focus();
                         }, 0);
                         event.preventDefault();
@@ -364,7 +370,7 @@
                 }
 
             })
-            .on("keydown", ".carrousel__content", function(event) {
+            .on("keydown", ".carrousel__content", function (event) {
 
                 var $this = $(this),
                     $tab_to_focus,
@@ -373,7 +379,7 @@
                 // CTRL up/Left
                 if ((event.keyCode == 37 || event.keyCode == 38) && event.ctrlKey) {
                     $tab_to_focus = $this.attr('aria-labelledby');
-                    setTimeout(function() {
+                    setTimeout(function () {
                         $("#" + $tab_to_focus).focus();
                     }, 0);
                     event.preventDefault();
@@ -381,7 +387,7 @@
                 // CTRL PageUp
                 if (event.keyCode == 33 && event.ctrlKey) {
                     $tab_focused = $this.attr('aria-labelledby');
-                    setTimeout(function() {
+                    setTimeout(function () {
                         $("#" + $tab_focused).focus();
                     }, 0);
 
@@ -390,14 +396,14 @@
                     // if we are on first => activate last
                     if ($parent.is(".js-carrousel__control__list__item:first-child")) {
                         $parent.parent().find(".js-carrousel__control__list__item:last-child a").click();
-                        setTimeout(function() {
+                        setTimeout(function () {
                             $parent.parent().find(".js-carrousel__control__list__item:last-child a").focus();
                         }, 0);
                     }
-                    // else activate prev
+                        // else activate prev
                     else {
                         $parent.prev().children(".js-carrousel__control__list__link").click();
-                        setTimeout(function() {
+                        setTimeout(function () {
                             $parent.prev().children(".js-carrousel__control__list__link").focus();
                         }, 0);
                     }
@@ -406,7 +412,7 @@
                 // CTRL PageDown
                 if (event.keyCode == 34 && event.ctrlKey) {
                     $tab_focused = $this.attr('aria-labelledby');
-                    setTimeout(function() {
+                    setTimeout(function () {
                         $("#" + $tab_focused).focus();
                     }, 0);
 
@@ -414,14 +420,14 @@
                     // if we are on last => activate first
                     if ($parent.is(".js-carrousel__control__list__item:last-child")) {
                         $parent.parent().find(".js-carrousel__control__list__item:first-child a").click();
-                        setTimeout(function() {
+                        setTimeout(function () {
                             $parent.parent().find(".js-carrousel__control__list__item:first-child a").focus();
                         }, 0);
                     }
-                    // else activate next
+                        // else activate next
                     else {
                         $parent.next().children(".js-carrousel__control__list__link").click();
-                        setTimeout(function() {
+                        setTimeout(function () {
                             $parent.next().children(".js-carrousel__control__list__link").focus();
                         }, 0);
                     }
@@ -431,30 +437,30 @@
             });
         /* click on a button prev/next */
         // prev
-        $body.on("click", ".js-carrousel__button__previous button", function(event) {
+        $body.on("click", ".js-carrousel__button__previous button", function (event) {
 
-                event.preventDefault();
+            event.preventDefault();
 
-                var $this = $(this),
-                    $activated,
-                    $parent = $this.parents(".carrousel"),
-                    $container = $parent.find(".carrousel__container");
+            var $this = $(this),
+                $activated,
+                $parent = $this.parents(".carrousel"),
+                $container = $parent.find(".carrousel__container");
 
-                // find previous tab
-                $activated = $parent.find('.js-carrousel__control__list__link[aria-selected="true"]').parent();
-                // if we are on first => activate last
-                if ($activated.is(".js-carrousel__control__list__item:first-child")) {
-                    $parent.find(".js-carrousel__control__list__item:last-child a").trigger('click', 'prev');
-                }
+            // find previous tab
+            $activated = $parent.find('.js-carrousel__control__list__link[aria-selected="true"]').parent();
+            // if we are on first => activate last
+            if ($activated.is(".js-carrousel__control__list__item:first-child")) {
+                $parent.find(".js-carrousel__control__list__item:last-child a").trigger('click', 'prev');
+            }
                 // else activate previous
-                else {
-                    $activated.prev().children(".js-carrousel__control__list__link").trigger('click', 'prev');
-                }
+            else {
+                $activated.prev().children(".js-carrousel__control__list__link").trigger('click', 'prev');
+            }
 
 
-            })
+        })
             // next
-            .on("click", ".js-carrousel__button__next button", function(event) {
+            .on("click", ".js-carrousel__button__next button", function (event) {
 
                 event.preventDefault();
 
@@ -469,12 +475,42 @@
                 if ($activated.is(".js-carrousel__control__list__item:last-child")) {
                     $parent.find(".js-carrousel__control__list__item:first-child a").trigger('click', 'next');
                 }
-                // else activate next
+                    // else activate next
                 else {
                     $activated.next().children(".js-carrousel__control__list__link").trigger('click', 'next');
                 }
-
             });
 
+        $carrousel_container.trigger('carrousel:initialized');
+
+
+        var counter = 0,
+            controlCarousel = setInterval(function () { startCarousel() }, AutoplayDuration);
+        function startCarousel() {
+
+            if (counter < $carrousel_content.length - 1) {
+                counter++
+                $("button[title='Show next panel']").trigger('click', 'next');
+                console.log(counter);
+                console.log($carrousel_content.length);
+
+            } else {
+
+                clearInterval(controlCarousel);
+                console.log('stopped counter');
+            };
+        };
+        $('.carrousel').mousedown(function () {
+            clearInterval(controlCarousel);
+            console.log('counter stopped by mousedown');
+        });
+
+        $('.carrousel').keypress(function () {
+            clearInterval(controlCarousel);
+            console.log('counter stopped by keyboard');
+        });
+        console.log(AutoplayDuration);
+
     });
+
 })(jQuery);
