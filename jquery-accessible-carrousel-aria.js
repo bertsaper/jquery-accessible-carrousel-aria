@@ -483,34 +483,30 @@
 
         $carrousel_container.trigger('carrousel:initialized');
 
+        // if data-carrousel-autoplay-duration is set to number. Left unset var remains an undefined string
+        if (typeof AutoplayDuration == "number") {
 
-        var counter = 0,
-            controlCarousel = setInterval(function () { startCarousel() }, AutoplayDuration);
-        function startCarousel() {
+            var counter = 0,
+                controlCarousel = setInterval(function () { startCarousel() }, AutoplayDuration);
+            function startCarousel() {
 
-            if (counter < $carrousel_content.length - 1) {
-                counter++
-                $("button[title='Show next panel']").trigger('click', 'next');
-                console.log(counter);
-                console.log($carrousel_content.length);
+                if (counter < $carrousel_content.length - 1) {
+                    counter++
+                    $("button[title='Show next panel']").trigger('click', 'next');
 
-            } else {
+                } else {
 
-                clearInterval(controlCarousel);
-                console.log('stopped counter');
+                    clearInterval(controlCarousel);
+                };
             };
-        };
-        $('.carrousel').mousedown(function () {
-            clearInterval(controlCarousel);
-            console.log('counter stopped by mousedown');
-        });
+            $('.carrousel').mousedown(function () {
+                clearInterval(controlCarousel);
+            });
 
-        $('.carrousel').keypress(function () {
-            clearInterval(controlCarousel);
-            console.log('counter stopped by keyboard');
-        });
-        console.log(AutoplayDuration);
-
+            $('.carrousel').keypress(function () {
+                clearInterval(controlCarousel);
+            });
+        }
     });
 
 })(jQuery);
